@@ -20,8 +20,8 @@
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/ecommerce-product-gallery.git
-   cd ecommerce-product-gallery
+   git clone https://github.com/ReedwanHossain/finance-tracker.git
+   cd finance-tracker
 
 2. Create .env.local from .env.example:
 
