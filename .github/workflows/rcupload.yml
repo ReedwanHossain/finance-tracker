@@ -1,7 +1,8 @@
 name: rcupload
 
 on:
-  push:
+ workflow_dispatch: 
+ push:
     branches:
       - main
     paths:
