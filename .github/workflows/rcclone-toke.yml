@@ -1,6 +1,7 @@
 name: Upload README to Google Drive
 
 on:
+  workflow_dispatch: 
   push:
     branches:
       - main
