@@ -21,7 +21,7 @@ jobs:
         with:
           credentials_json: '${{ secrets.GDRIVE_CREDENTIALS }}'
           token_format: access_token
-          access_token_scopes: https://www.googleapis.com/auth/drive
+          # access_token_scopes: https://www.googleapis.com/auth/drive
 
       - name: Upload or Overwrite README.md
         run: |
