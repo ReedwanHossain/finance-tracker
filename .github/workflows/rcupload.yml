@@ -18,15 +18,20 @@ jobs:
       - name: Install rclone
         run: curl https://rclone.org/install.sh | sudo bash
 
-      - name: Configure rclone
+      - name: Configure and Upload
+        env:
+          GDRIVE_CREDENTIALS: ${{ secrets.GDRIVE_CREDENTIALS }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
         run: |
           mkdir -p ~/.config/rclone
-          cat > ~/.config/rclone/rclone.conf << 'EOF'
+
+          echo "$GDRIVE_CREDENTIALS" > /tmp/sa.json
+
+          cat > ~/.config/rclone/rclone.conf << EOF
           [gdrive]
           type = drive
-          service_account_credentials = ${{ secrets.GDRIVE_CREDENTIALS }}
-          root_folder_id = ${{ secrets.GDRIVE_FOLDER_ID }}
+          service_account_file = /tmp/sa.json
+          root_folder_id = $GDRIVE_FOLDER_ID
           EOF
 
-      - name: Upload README.md
-        run: rclone copy README.md gdrive:
+          rclone copy README.md gdrive: -v
