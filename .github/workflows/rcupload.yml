@@ -19,7 +19,7 @@ jobs:
         id: auth
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: '${{ secrets.GDRIVE_SERVICE_ACCOUNT }}'
+          credentials_json: '${{ secrets.GDRIVE_CREDENTIALS }}'
           token_format: access_token
           access_token_scopes: https://www.googleapis.com/auth/drive
 
@@ -31,7 +31,7 @@ jobs:
           cat > ~/.config/rclone/rclone.conf << EOF
           [gdrive]
           type = drive
-          service_account_credentials = ${{ secrets.GDRIVE_SERVICE_ACCOUNT }}
+          service_account_credentials = ${{ secrets.GDRIVE_CREDENTIALS }}
           root_folder_id = ${{ secrets.GDRIVE_FOLDER_ID }}
           EOF
       
