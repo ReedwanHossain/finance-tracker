@@ -1,4 +1,28 @@
+# name: Upload README to Google Drive
+# on:
+#   workflow_dispatch:
+#   push:
+#     branches:
+#       - main
+#     paths:
+#       - 'README.md'
+# jobs:
+#   upload:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout repo
+#         uses: actions/checkout@v4
+#       - name: Upload to Google Drive
+#         uses: adityak74/google-drive-upload-git-action@main
+#         with:
+#           credentials: ${{ secrets.GDRIVE_CREDENTIALS }}
+#           filename: README.md
+#           folderId: ${{ secrets.GDRIVE_FOLDER_ID }}
+#           overwrite: true
+
+
 name: Upload README to Google Drive
+
 on:
   workflow_dispatch:
   push:
@@ -6,16 +30,62 @@ on:
       - main
     paths:
       - 'README.md'
+
 jobs:
   upload:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Upload to Google Drive
-        uses: adityak74/google-drive-upload-git-action@main
+
+      - name: Authenticate with Google
+        id: auth
+        uses: google-github-actions/auth@v2
         with:
-          credentials: ${{ secrets.GDRIVE_CREDENTIALS }}
-          filename: README.md
-          folderId: ${{ secrets.GDRIVE_FOLDER_ID }}
-          overwrite: true
+          credentials_json: '${{ secrets.GDRIVE_CREDENTIALS }}'
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/drive
+
+      - name: Upload or Overwrite README.md
+        run: |
+          ACCESS_TOKEN="${{ steps.auth.outputs.access_token }}"
+          FILE_PATH="README.md"
+          FILE_NAME="README.md"
+          FOLDER_ID="${{ secrets.GDRIVE_FOLDER_ID }}"
+
+          # Check if file already exists
+          EXISTING_ID=$(curl -s \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            "https://www.googleapis.com/drive/v3/files?q=name%3D'$FILE_NAME'+and+'$FOLDER_ID'+in+parents+and+trashed%3Dfalse&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name)" \
+            | python3 -c "import sys,json; files=json.load(sys.stdin).get('files',[]); print(files[0]['id'] if files else '')")
+
+          if [ -n "$EXISTING_ID" ]; then
+            echo "✅ File exists — overwriting..."
+            curl -s -X PATCH \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -F "metadata={\"name\":\"$FILE_NAME\"};type=application/json;charset=UTF-8" \
+              -F "file=@$FILE_PATH" \
+              "https://www.googleapis.com/upload/drive/v3/files/$EXISTING_ID?uploadType=multipart&supportsAllDrives=true" \
+            | tee upload_response.json
+          else
+            echo "🆕 File not found — creating new..."
+            curl -s -X POST \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -F "metadata={\"name\":\"$FILE_NAME\",\"parents\":[\"$FOLDER_ID\"]};type=application/json;charset=UTF-8" \
+              -F "file=@$FILE_PATH" \
+              "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true" \
+            | tee upload_response.json
+          fi
+
+          echo "--- Upload Response ---"
+          cat upload_response.json
+
+      - name: Check for errors
+        run: |
+          if grep -q '"error"' upload_response.json; then
+            echo "❌ Upload failed!"
+            cat upload_response.json
+            exit 1
+          else
+            echo "✅ Upload successful!"
+          fi
