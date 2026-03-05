@@ -25,7 +25,11 @@ jobs:
         run: |
           mkdir -p ~/.config/rclone
 
-          echo "$GDRIVE_CREDENTIALS" > /tmp/sa.json
+          # Decode base64 to raw JSON
+          echo "$GDRIVE_CREDENTIALS" | base64 --decode > /tmp/sa.json
+
+          # Verify it looks like JSON
+          head -c 50 /tmp/sa.json
 
           cat > ~/.config/rclone/rclone.conf << EOF
           [gdrive]
